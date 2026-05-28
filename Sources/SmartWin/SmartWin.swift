@@ -135,26 +135,53 @@ struct RepositionWindow: ParsableCommand {
 
     mutating func run() throws {
         let windowManager = WindowManager.shared
+        // Support numeric application index (zero-based) as alternative to name
+        var targetAppName = application
+        if let appIndex = Int(application) {
+            let groups = windowManager.detectWindows()
+            guard appIndex >= 0 && appIndex < groups.count else {
+                throw ValidationError("Application index out of range: \(appIndex)")
+            }
+            targetAppName = groups[appIndex].applicationName
+        }
 
-        if let windowTitle = window {
-            try windowManager.repositionWindow(
-                applicationName: application,
-                windowTitle: windowTitle,
-                x: x,
-                y: y,
-                width: width,
-                height: height
-            )
-            print("✓ Repositioned window '\(windowTitle)' in \(application)")
+        if let windowArg = window {
+            // Support numeric window index (zero-based) as alternative to title
+            if let winIndex = Int(windowArg) {
+                let wins = windowManager.getWindowsForApplication(byName: targetAppName)
+                guard winIndex >= 0 && winIndex < wins.count else {
+                    throw ValidationError("Window index out of range: \(winIndex)")
+                }
+                let winTitle = wins[winIndex].windowTitle
+                try windowManager.repositionWindow(
+                    applicationName: targetAppName,
+                    windowTitle: winTitle,
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height
+                )
+                print("✓ Repositioned window '\(winTitle)' in \(targetAppName)")
+            } else {
+                try windowManager.repositionWindow(
+                    applicationName: targetAppName,
+                    windowTitle: windowArg,
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height
+                )
+                print("✓ Repositioned window '\(windowArg)' in \(targetAppName)")
+            }
         } else {
             try windowManager.repositionWindow(
-                applicationName: application,
+                applicationName: targetAppName,
                 x: x,
                 y: y,
                 width: width,
                 height: height
             )
-            print("✓ Repositioned first window of \(application)")
+            print("✓ Repositioned first window of \(targetAppName)")
         }
     }
 }
