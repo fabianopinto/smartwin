@@ -256,19 +256,26 @@ final class WindowManager: @unchecked Sendable {
     private nonisolated func setWindowPosition(
         _ element: AXUIElement, x: Int, y: Int, width: Int, height: Int
     ) throws {
-        let position = NSValue(point: NSPoint(x: CGFloat(x), y: CGFloat(y)))
-        let size = NSValue(size: NSSize(width: CGFloat(width), height: CGFloat(height)))
+        var point = CGPoint(x: CGFloat(x), y: CGFloat(y))
+        guard let positionAXValue = AXValueCreate(.cgPoint, &point) else {
+            throw WindowError.failedToRepositionWindow
+        }
+
+        var size = CGSize(width: CGFloat(width), height: CGFloat(height))
+        guard let sizeAXValue = AXValueCreate(.cgSize, &size) else {
+            throw WindowError.failedToRepositionWindow
+        }
 
         let posResult = AXUIElementSetAttributeValue(
             element,
             kAXPositionAttribute as CFString,
-            position as CFTypeRef
+            positionAXValue
         )
 
         let sizeResult = AXUIElementSetAttributeValue(
             element,
             kAXSizeAttribute as CFString,
-            size as CFTypeRef
+            sizeAXValue
         )
 
         if posResult != .success || sizeResult != .success {
