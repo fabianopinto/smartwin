@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SmartWin}",
+            "name": "Debug SmartWin",
+            "target": "SmartWin",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SmartWin"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SmartWin}",
+            "name": "Release SmartWin",
+            "target": "SmartWin",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SmartWin"
+        }
+    ]
+}
