@@ -90,15 +90,46 @@ struct DetectWindows: ParsableCommand {
                 print("No windows detected")
             } else {
                 if json {
+                    struct JSONWindow: Codable {
+                        let windowIndex: Int
+                        let windowTitle: String
+                        let windowID: UInt32?
+                        let x: Int
+                        let y: Int
+                        let width: Int
+                        let height: Int
+                    }
+
+                    struct JSONApp: Codable {
+                        let appIndex: Int
+                        let applicationName: String
+                        let windows: [JSONWindow]
+                    }
+
+                    var output: [JSONApp] = []
+                    for (i, group) in groups.enumerated() {
+                        var wins: [JSONWindow] = []
+                        for (j, w) in group.windows.enumerated() {
+                            wins.append(
+                                JSONWindow(
+                                    windowIndex: j, windowTitle: w.windowTitle,
+                                    windowID: w.windowID, x: w.x, y: w.y, width: w.width,
+                                    height: w.height))
+                        }
+                        output.append(
+                            JSONApp(
+                                appIndex: i, applicationName: group.applicationName, windows: wins))
+                    }
+
                     let encoder = JSONEncoder()
                     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                    let jsonData = try encoder.encode(groups)
+                    let jsonData = try encoder.encode(output)
                     print(String(data: jsonData, encoding: .utf8) ?? "")
                 } else {
-                    for group in groups {
-                        print("▸ \(group)")
-                        for window in group.windows {
-                            print("  ├─ \(window)")
+                    for (i, group) in groups.enumerated() {
+                        print("\(i): ▸ \(group)")
+                        for (j, window) in group.windows.enumerated() {
+                            print("  ├─ [\(j)] \(window)")
                         }
                     }
                 }
@@ -115,23 +146,37 @@ struct RepositionWindow: ParsableCommand {
         abstract: "Move and resize an application window"
     )
 
-    @Argument(help: "Application name")
+    @Argument(help: "Application name or zero-based index")
     var application: String
 
-    @Option(name: .short, help: "Window title (if not specified, uses first window)")
+    @Option(
+        name: .short, parsing: .unconditional,
+        help: "Window title or zero-based index (if not specified, uses first window)")
     var window: String?
 
-    @Option(name: .short, help: "X coordinate")
+    @Option(name: .short, parsing: .unconditional, help: "X coordinate (can be negative)")
     var x: Int
 
-    @Option(name: .short, help: "Y coordinate")
+    @Option(name: .short, parsing: .unconditional, help: "Y coordinate (can be negative)")
     var y: Int
 
-    @Option(help: "Window width")
-    var width: Int
+    @Option(parsing: .unconditional, help: "Window width (positive integer)")
+    var width: Int?
 
-    @Option(help: "Window height")
-    var height: Int
+    @Option(parsing: .unconditional, help: "Window height (positive integer)")
+    var height: Int?
+
+    func validate() throws {
+        let isResizing = width != nil || height != nil
+        if isResizing {
+            guard let width = width, let height = height else {
+                throw ValidationError("Both --width and --height must be provided together")
+            }
+            guard width > 0 && height > 0 else {
+                throw ValidationError("Width and height must be positive")
+            }
+        }
+    }
 
     mutating func run() throws {
         let windowManager = WindowManager.shared

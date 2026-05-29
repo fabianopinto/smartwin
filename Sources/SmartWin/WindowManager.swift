@@ -55,7 +55,8 @@ final class WindowManager: @unchecked Sendable {
 
     /// Reposition and resize a window
     nonisolated func repositionWindow(
-        applicationName: String, windowTitle: String, x: Int, y: Int, width: Int, height: Int
+        applicationName: String, windowTitle: String, x: Int, y: Int, width: Int? = nil,
+        height: Int? = nil
     ) throws {
         let workspace = NSWorkspace.shared
         guard
@@ -89,7 +90,7 @@ final class WindowManager: @unchecked Sendable {
 
     /// Reposition and resize a window by application name (first window of the app)
     nonisolated func repositionWindow(
-        applicationName: String, x: Int, y: Int, width: Int, height: Int
+        applicationName: String, x: Int, y: Int, width: Int? = nil, height: Int? = nil
     ) throws {
         let workspace = NSWorkspace.shared
         guard
@@ -254,15 +255,10 @@ final class WindowManager: @unchecked Sendable {
     }
 
     private nonisolated func setWindowPosition(
-        _ element: AXUIElement, x: Int, y: Int, width: Int, height: Int
+        _ element: AXUIElement, x: Int, y: Int, width: Int?, height: Int?
     ) throws {
         var point = CGPoint(x: CGFloat(x), y: CGFloat(y))
         guard let positionAXValue = AXValueCreate(.cgPoint, &point) else {
-            throw WindowError.failedToRepositionWindow
-        }
-
-        var size = CGSize(width: CGFloat(width), height: CGFloat(height))
-        guard let sizeAXValue = AXValueCreate(.cgSize, &size) else {
             throw WindowError.failedToRepositionWindow
         }
 
@@ -271,15 +267,24 @@ final class WindowManager: @unchecked Sendable {
             kAXPositionAttribute as CFString,
             positionAXValue
         )
-
-        let sizeResult = AXUIElementSetAttributeValue(
-            element,
-            kAXSizeAttribute as CFString,
-            sizeAXValue
-        )
-
-        if posResult != .success || sizeResult != .success {
+        guard posResult == .success else {
             throw WindowError.failedToRepositionWindow
+        }
+
+        if let width = width, let height = height {
+            var size = CGSize(width: CGFloat(width), height: CGFloat(height))
+            guard let sizeAXValue = AXValueCreate(.cgSize, &size) else {
+                throw WindowError.failedToRepositionWindow
+            }
+
+            let sizeResult = AXUIElementSetAttributeValue(
+                element,
+                kAXSizeAttribute as CFString,
+                sizeAXValue
+            )
+            guard sizeResult == .success else {
+                throw WindowError.failedToRepositionWindow
+            }
         }
     }
 }

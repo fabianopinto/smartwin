@@ -102,13 +102,18 @@ Output:
 
 ### Reposition Window
 
-Move and resize an application window:
+Move an application window, and optionally resize it if both `--width` and `--height` are provided.
 
+```bash
+smartwin reposition-window "Safari" -x 0 -y 0
+```
+
+**Reposition and resize a window:**
 ```bash
 smartwin reposition-window "Safari" -x 0 -y 0 --width 1728 --height 1117
 ```
 
-**Reposition Specific Window:**
+**Reposition a specific window:**
 ```bash
 smartwin reposition-window "Safari" -w "GitHub" -x 100 -y 100 --width 800 --height 600
 ```
@@ -142,20 +147,20 @@ OPTIONS:
 
 ### reposition-window
 
-Move and resize an application window.
+Move and optionally resize an application window. When resizing, both `--width` and `--height` must be provided together.
 
 ```
-USAGE: smartwin reposition-window <application> [-w <w>] -x <x> -y <y> --width <width> --height <height>
+USAGE: smartwin reposition-window <application> [-w <w>] -x <x> -y <y> [--width <width> --height <height>]
 
 ARGUMENTS:
   <application>           Application name
 
 OPTIONS:
   -w <w>                  Window title (if not specified, uses first window)
-  -x <x>                  X coordinate
-  -y <y>                  Y coordinate
-  --width <width>         Window width
-  --height <height>       Window height
+  -x <x>                  X coordinate (can be negative)
+  -y <y>                  Y coordinate (can be negative)
+  --width <width>         Window width (positive integer)
+  --height <height>       Window height (positive integer)
   -h, --help              Show help information.
 ```
 
