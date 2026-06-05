@@ -45,7 +45,7 @@ Monitor #1: LG Display @ (1728, 0) 2560x1440
 
 **JSON Output:**
 ```bash
-smartwin detect-monitors -j
+smartwin detect-monitors --json
 ```
 
 Output:
@@ -73,12 +73,12 @@ smartwin detect-windows
 
 **Filter by Application:**
 ```bash
-smartwin detect-windows -a "Safari"
+smartwin detect-windows "Safari"
 ```
 
 **JSON Output:**
 ```bash
-smartwin detect-windows -j
+smartwin detect-windows --json
 ```
 
 Output:
@@ -125,10 +125,10 @@ smartwin reposition-window "Safari" -w "GitHub" -x 100 -y 100 --width 800 --heig
 List all monitors with their geometry.
 
 ```
-USAGE: smartwin detect-monitors [-j]
+USAGE: smartwin detect-monitors [-j|--json]
 
 OPTIONS:
-  -j                      Output as JSON
+  -j, --json               Output as JSON
   -h, --help              Show help information.
 ```
 
@@ -137,11 +137,13 @@ OPTIONS:
 List all application windows with their positions and sizes.
 
 ```
-USAGE: smartwin detect-windows [-a <a>] [-j]
+USAGE: smartwin detect-windows [<application>] [-j|--json]
+
+ARGUMENTS:
+  <application>           Application name or zero-based index
 
 OPTIONS:
-  -a <a>                  Filter by application name
-  -j                      Output as JSON
+  -j, --json               Output as JSON
   -h, --help              Show help information.
 ```
 
@@ -150,15 +152,20 @@ OPTIONS:
 Move and optionally resize an application window. When resizing, both `--width` and `--height` must be provided together.
 
 ```
-USAGE: smartwin reposition-window <application> [-w <w>] -x <x> -y <y> [--width <width> --height <height>]
+USAGE: smartwin reposition-window <application> [-w <w>] [-x <x>] [-y <y>] [-m <monitor>|--monitor <monitor>] [--left <left> | --right <right>] [--top <top> | --bottom <bottom>] [--width <width> --height <height>]
 
 ARGUMENTS:
-  <application>           Application name
+  <application>           Application name or zero-based index
 
 OPTIONS:
-  -w <w>                  Window title (if not specified, uses first window)
+  -w, --window <w>        Window title or zero-based index (if not specified, uses first window)
   -x <x>                  X coordinate (can be negative)
   -y <y>                  Y coordinate (can be negative)
+  -m, --monitor <monitor> Monitor index for relative position calculations (default 0)
+  --left <left>           Position relative to selected monitor left border
+  --top <top>             Position relative to selected monitor top border
+  --right <right>         Position relative to selected monitor right border; uses window width
+  --bottom <bottom>       Position relative to selected monitor bottom border; uses window height
   --width <width>         Window width (positive integer)
   --height <height>       Window height (positive integer)
   -h, --help              Show help information.
@@ -192,7 +199,7 @@ smartwin reposition-window "Terminal" -x 0 -y 558 --width 864 --height 559
 ### Example 3: Get Window Details in JSON
 
 ```bash
-smartwin detect-windows -a "Firefox" -j | jq '.[] | .windows[]'
+smartwin detect-windows "Firefox" --json | jq '.[] | .windows[]'
 ```
 
 ## Requirements

@@ -26,7 +26,7 @@ struct DetectMonitors: ParsableCommand {
         abstract: "List all monitors with their geometry"
     )
 
-    @Flag(name: .short, help: "Output as JSON")
+    @Flag(name: .shortAndLong, help: "Output as JSON")
     var json: Bool = false
 
     mutating func run() throws {
@@ -57,20 +57,31 @@ struct DetectWindows: ParsableCommand {
         abstract: "List all application windows with their positions and sizes"
     )
 
-    @Option(name: .short, help: "Filter by application name")
-    var application: String?
+    @Argument(help: "Application name or zero-based index")
+    var applicationArgument: String?
 
-    @Flag(name: .short, help: "Output as JSON")
+    @Flag(name: .shortAndLong, help: "Output as JSON")
     var json: Bool = false
 
     mutating func run() throws {
         let windowManager = WindowManager.shared
+        let application = applicationArgument
 
-        if let appName = application {
-            let windows = windowManager.getWindowsForApplication(byName: appName)
+        if let appFilter = application {
+            // Support numeric application index (zero-based) as alternative to name
+            var targetAppName = appFilter
+            if let appIndex = Int(appFilter) {
+                let groups = windowManager.detectWindows()
+                guard appIndex >= 0 && appIndex < groups.count else {
+                    throw ValidationError("Application index out of range: \(appIndex)")
+                }
+                targetAppName = groups[appIndex].applicationName
+            }
+
+            let windows = windowManager.getWindowsForApplication(byName: targetAppName)
 
             if windows.isEmpty {
-                print("No windows found for application: \(appName)")
+                print("No windows found for application: \(targetAppName)")
             } else {
                 if json {
                     let encoder = JSONEncoder()
@@ -150,15 +161,30 @@ struct RepositionWindow: ParsableCommand {
     var application: String
 
     @Option(
-        name: .short, parsing: .unconditional,
+        name: .shortAndLong, parsing: .unconditional,
         help: "Window title or zero-based index (if not specified, uses first window)")
     var window: String?
 
     @Option(name: .short, parsing: .unconditional, help: "X coordinate (can be negative)")
-    var x: Int
+    var x: Int?
 
     @Option(name: .short, parsing: .unconditional, help: "Y coordinate (can be negative)")
-    var y: Int
+    var y: Int?
+
+    @Option(name: .shortAndLong, help: "Monitor index for relative position calculations")
+    var monitor: Int = 0
+
+    @Option(help: "Position relative to selected monitor left border")
+    var left: Int?
+
+    @Option(help: "Position relative to selected monitor top border")
+    var top: Int?
+
+    @Option(help: "Position relative to selected monitor right border; uses window width")
+    var right: Int?
+
+    @Option(help: "Position relative to selected monitor bottom border; uses window height")
+    var bottom: Int?
 
     @Option(parsing: .unconditional, help: "Window width (positive integer)")
     var width: Int?
@@ -167,6 +193,22 @@ struct RepositionWindow: ParsableCommand {
     var height: Int?
 
     func validate() throws {
+        if left != nil && right != nil {
+            throw ValidationError("Options --left and --right cannot be used together")
+        }
+        if top != nil && bottom != nil {
+            throw ValidationError("Options --top and --bottom cannot be used together")
+        }
+        if x != nil && (left != nil || right != nil) {
+            throw ValidationError("Cannot use --x with --left or --right")
+        }
+        if y != nil && (top != nil || bottom != nil) {
+            throw ValidationError("Cannot use --y with --top or --bottom")
+        }
+        if monitor < 0 {
+            throw ValidationError("Monitor index must be zero or positive")
+        }
+
         let isResizing = width != nil || height != nil
         if isResizing {
             guard let width = width, let height = height else {
@@ -190,43 +232,20 @@ struct RepositionWindow: ParsableCommand {
             targetAppName = groups[appIndex].applicationName
         }
 
-        if let windowArg = window {
-            // Support numeric window index (zero-based) as alternative to title
-            if let winIndex = Int(windowArg) {
-                let wins = windowManager.getWindowsForApplication(byName: targetAppName)
-                guard winIndex >= 0 && winIndex < wins.count else {
-                    throw ValidationError("Window index out of range: \(winIndex)")
-                }
-                let winTitle = wins[winIndex].windowTitle
-                try windowManager.repositionWindow(
-                    applicationName: targetAppName,
-                    windowTitle: winTitle,
-                    x: x,
-                    y: y,
-                    width: width,
-                    height: height
-                )
-                print("✓ Repositioned window '\(winTitle)' in \(targetAppName)")
-            } else {
-                try windowManager.repositionWindow(
-                    applicationName: targetAppName,
-                    windowTitle: windowArg,
-                    x: x,
-                    y: y,
-                    width: width,
-                    height: height
-                )
-                print("✓ Repositioned window '\(windowArg)' in \(targetAppName)")
-            }
-        } else {
-            try windowManager.repositionWindow(
-                applicationName: targetAppName,
-                x: x,
-                y: y,
-                width: width,
-                height: height
-            )
-            print("✓ Repositioned first window of \(targetAppName)")
-        }
+        let windowTitle = try windowManager.repositionWindow(
+            applicationName: targetAppName,
+            windowIdentifier: window,
+            x: x,
+            y: y,
+            monitorIndex: monitor,
+            left: left,
+            top: top,
+            right: right,
+            bottom: bottom,
+            width: width,
+            height: height
+        )
+
+        print("✓ Repositioned window '\(windowTitle)' in \(targetAppName)")
     }
 }
