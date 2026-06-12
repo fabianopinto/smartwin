@@ -207,12 +207,11 @@ final class WindowManager: @unchecked Sendable {
             }
 
             if let top = top {
-                // "top" is an offset from the monitor's top edge, so compute
-                // the Y position by subtracting from monitor's top (y + height).
-                finalY = monitor.y + monitor.height - effectiveHeight - top
+                // Align to monitor's top border: offset downwards from monitor.y
+                finalY = monitor.y + top
             } else if let bottom = bottom {
-                // "bottom" is an offset from the monitor's bottom edge
-                finalY = monitor.y + bottom
+                // Align to monitor's bottom border: compute from top edge
+                finalY = monitor.y + monitor.height - effectiveHeight - bottom
             }
         }
 
