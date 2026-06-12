@@ -147,11 +147,16 @@ final class WindowManager: @unchecked Sendable {
                     throw WindowError.windowNotFound(identifier)
                 }
                 windowElement = windowElements[index]
-                resolvedTitle = (try getAXAttribute(windowElement, attribute: kAXTitleAttribute) as? String) ?? identifier
+                resolvedTitle =
+                    (try getAXAttribute(windowElement, attribute: kAXTitleAttribute) as? String)
+                    ?? identifier
             } else {
-                guard let foundWindow = windowElements.first(where: {
-                    (try? getAXAttribute($0, attribute: kAXTitleAttribute) as? String) == identifier
-                }) else {
+                guard
+                    let foundWindow = windowElements.first(where: {
+                        (try? getAXAttribute($0, attribute: kAXTitleAttribute) as? String)
+                            == identifier
+                    })
+                else {
                     throw WindowError.windowNotFound(identifier)
                 }
                 windowElement = foundWindow
@@ -159,13 +164,17 @@ final class WindowManager: @unchecked Sendable {
             }
         } else {
             windowElement = windowElements[0]
-            resolvedTitle = (try getAXAttribute(windowElement, attribute: kAXTitleAttribute) as? String) ?? "<unknown>"
+            resolvedTitle =
+                (try getAXAttribute(windowElement, attribute: kAXTitleAttribute) as? String)
+                ?? "<unknown>"
         }
 
-        let position = getAXPosition(windowElement)
+        let position =
+            getAXPosition(windowElement)
             ?? getAXFrame(windowElement).map { CGPoint(x: $0.origin.x, y: $0.origin.y) }
             ?? CGPoint.zero
-        let size = getAXSize(windowElement)
+        let size =
+            getAXSize(windowElement)
             ?? getAXFrame(windowElement).map { CGSize(width: $0.width, height: $0.height) }
             ?? CGSize(width: 0, height: 0)
 
@@ -198,9 +207,12 @@ final class WindowManager: @unchecked Sendable {
             }
 
             if let top = top {
-                finalY = monitor.y + top
+                // "top" is an offset from the monitor's top edge, so compute
+                // the Y position by subtracting from monitor's top (y + height).
+                finalY = monitor.y + monitor.height - effectiveHeight - top
             } else if let bottom = bottom {
-                finalY = monitor.y + monitor.height - effectiveHeight - bottom
+                // "bottom" is an offset from the monitor's bottom edge
+                finalY = monitor.y + bottom
             }
         }
 

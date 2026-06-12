@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import CoreGraphics
 
 final class MonitorManager: @unchecked Sendable {
     static let shared = MonitorManager()
@@ -10,7 +11,14 @@ final class MonitorManager: @unchecked Sendable {
         var monitors: [MonitorInfo] = []
 
         for (index, screen) in screens.enumerated() {
-            let frame = screen.frame
+            // Prefer CoreGraphics display bounds (global coordinates) to align
+            // with Accessibility / AX coordinates. Fall back to screen.visibleFrame.
+            var frame = screen.visibleFrame
+            if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
+                let displayID = CGDirectDisplayID(screenNumber.uint32Value)
+                let bounds = CGDisplayBounds(displayID)
+                frame = bounds
+            }
             let screenName =
                 if #available(macOS 10.15, *) {
                     screen.localizedName
